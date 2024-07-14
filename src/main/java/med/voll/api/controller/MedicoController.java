@@ -1,5 +1,6 @@
 package med.voll.api.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -29,14 +30,17 @@ public class MedicoController {
     private MedicoRepositorio medicoRepositorio;
 
     @PostMapping
+    @Transactional
+    @Operation(summary = "Registra un nuevo medico en la base de datos")
     public ResponseEntity<DatosRespuestaMedico> registrarMedico(@RequestBody @Valid DatosRegistroMedico datosRegistroMedico,
-                                                                UriComponentsBuilder uriComponentsBuilder){
-        Medico medico = medicoRepositorio.save(new Medico (datosRegistroMedico));
+                                                                UriComponentsBuilder uriComponentsBuilder) {
+        Medico medico = medicoRepositorio.save(new Medico(datosRegistroMedico));
         DatosRespuestaMedico datosRespuestaMedico = new DatosRespuestaMedico(medico.getId(), medico.getNombre(), medico.getEmail(),
-                medico.getTelefono(),medico.getEspecialidad().toString(),
+                medico.getTelefono(), medico.getEspecialidad().toString(),
                 new DatosDireccion(medico.getDireccion().getCalle(), medico.getDireccion().getDistrito(),
-                        medico.getDireccion().getCiudad(),medico.getDireccion().getNumero(),
+                        medico.getDireccion().getCiudad(), medico.getDireccion().getNumero(),
                         medico.getDireccion().getComplemento()));
+
         URI url = uriComponentsBuilder.path("/medicos/{id}").buildAndExpand(medico.getId()).toUri();
         return ResponseEntity.created(url).body(datosRespuestaMedico);
         // return 201 Create
@@ -49,6 +53,7 @@ public class MedicoController {
 //    }
 
     @GetMapping
+    @Operation(summary = "Obtiene el listado de medicos")
     public ResponseEntity<Page<DatosListadoMedico>> listadoMedicos (@PageableDefault(page = 0, size = 10, sort = {"nombre"}) Pageable paginacion){
 //        return medicoRepositorio.findAll(paginacion).map(DatosListadoMedico::new);
         return ResponseEntity.ok(medicoRepositorio.findByActivoTrue(paginacion).map(DatosListadoMedico::new));
@@ -56,6 +61,7 @@ public class MedicoController {
 
     @PutMapping
     @Transactional //le estoy diciendo que una vez que ejecute ya terminó la transacción
+    @Operation(summary = "Actualiza los datos de un medico existente")
     public ResponseEntity actualizarMedico (@RequestBody @Valid DatosActualizarMedico datosActualizarMedico){
         Medico medico = medicoRepositorio.getReferenceById(datosActualizarMedico.id());
         medico.actualizarDatos(datosActualizarMedico);
@@ -76,6 +82,7 @@ public class MedicoController {
     // DELETE LOGICO
     @DeleteMapping("/{id}")
     @Transactional
+    @Operation(summary = "Elimina un medico registrado - inactivo")
     public ResponseEntity eliminarMedico(@PathVariable Long id) {
         Medico medico = medicoRepositorio.getReferenceById(id);
         medico.desactivarMedico();
@@ -83,6 +90,7 @@ public class MedicoController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Obtiene los registros del medico con ID")
     public ResponseEntity<DatosRespuestaMedico> retornaDatosMedico (@PathVariable Long id) {
         Medico medico = medicoRepositorio.getReferenceById(id);
         var datosMedicos = new DatosRespuestaMedico(medico.getId(), medico.getNombre(), medico.getEmail(),
